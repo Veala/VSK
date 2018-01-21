@@ -7,16 +7,16 @@ using namespace std;
 int main(int argc, char* argv[])
 {
 	cout << "Hello world" << endl;
-	int sfd = socket(AF_INET, SOCK_STREAM, tcp);
-	if (sfd == -1) {
-		perror("sfd");
-		exit(2);
-	}
+	int sfd = socket(AF_INET, SOCK_STREAM, TCP);
+//	if (sfd == -1) {
+//		perror("sfd");
+//		exit(2);
+//	}
 
-	sockaddr_in my_addr;
+//	sockaddr_in my_addr;
 	
-	int bnd = bind(sfd, &my_addr, sizeof(sockaddr_in));
-	sock
+//	int bnd = bind(sfd, &my_addr, sizeof(sockaddr_in));
+//	sock
 
 	string str;
 	cout << "=>";
@@ -25,8 +25,8 @@ int main(int argc, char* argv[])
 			
 		} else if (str == "exit") {
 			break;
-		} else if () {
-			
+		} else if (str == "start") {
+			break;
 		}
 		cout << "=> ";
 	}
