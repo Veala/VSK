@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -20,27 +23,26 @@ int main(int argc, char* argv[])
 //        exit(EXIT_FAILURE);
 //    }
     int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+
     if (tcp_socket == -1)
         handle_error("tcp_socket error");
-    sockaddr_in my_addr;
-    if (inet_aton("10.7.14.14", &my_addr.sin_addr) == 0)
-        handle_error("inet_aton");
 
+    sockaddr_in my_addr;
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = 3307;
 
-//    printf("%s\n", inet_ntoa(my_addr.sin_addr));
-//    in_addr net;
-//    net.s_addr = inet_netof(my_addr.sin_addr);
-//    in_addr host;
-//    host.s_addr = inet_lnaof(my_addr.sin_addr);
-//    printf("%s\n", inet_ntoa(net));
-//    printf("%s\n", inet_ntoa(host));
-	
-    if (bind(sfd, (sockaddr *) &my_addr, sizeof(sockaddr_in)) == -1)
+    if (inet_aton("10.7.14.14", &my_addr.sin_addr) == 0)
+        handle_error("inet_aton");
+
+    if (bind(tcp_socket, (sockaddr *) &my_addr, sizeof(sockaddr_in)) == -1)
         handle_error("bind error");
-    if (listen(sfd, 1) == -1)
+
+    if (listen(tcp_socket, 1) == -1)
         handle_error("listen error");
+
+    int selretval;
+    timeval tv;
+
 
 
 //	string str;
@@ -55,10 +57,6 @@ int main(int argc, char* argv[])
 //		}
 //		cout << "=> ";
 //	}
-    //00001110
-    //00001110
-    //00000111
-
 	
-	return 1;
+    return 0;
 }
