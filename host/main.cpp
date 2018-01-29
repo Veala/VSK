@@ -11,7 +11,7 @@
 
 using namespace std;
 
-void handle_error(char* msg) {
+void handle_error(const char* msg) {
     perror(msg);
     exit(EXIT_FAILURE);
 }
@@ -31,15 +31,15 @@ int main(int argc, char* argv[])
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = 3307;
 
-    //if (inet_aton("10.7.14.14", &my_addr.sin_addr) == 0)
-    if (inet_aton("192.168.0.100", &my_addr.sin_addr) == 0)
+    if (inet_aton("10.7.14.14", &my_addr.sin_addr) == 0)
+    //if (inet_aton("192.168.0.100", &my_addr.sin_addr) == 0)
         handle_error("inet_aton");
 
     if (bind(tcp_socket, (sockaddr *) &my_addr, sizeof(sockaddr_in)) == -1)
-        handle_error("bind error");
+        handle_error("bind");
 
     if (listen(tcp_socket, 1) == -1)
-        handle_error("listen error");
+        handle_error("listen");
 
     printf("listening...\n");
 
@@ -62,9 +62,11 @@ int main(int argc, char* argv[])
                 handle_error("accept");
         } else {
             printf("No connection.\n");
+            return 1;
         }
     } else {
         printf("No connection within five seconds.\n");
+        return 1;
     }
 
     if (close(tcp_socket) == -1)
@@ -80,6 +82,8 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
+
+            write(rw_socket,)
 
         } else if (str == "recieve") {
 
