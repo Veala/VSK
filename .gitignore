@@ -1,6 +1,7 @@
 host/main
 host/host.pro.user
 terasic/main
+terasic/terasic
 terasic/terasic.pro.user
 host/main.cpp.autosave
 terasic/main.cpp.autosave

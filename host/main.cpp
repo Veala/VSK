@@ -8,8 +8,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 using namespace std;
+
+char message[] = "Hello Terasic!\n";
+char buf[1024];
+char answer[] = "answer me";
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -82,13 +87,32 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
-
-            write(rw_socket,)
-
+            if (write(rw_socket, &message, sizeof(message)) == -1)
+                perror("write");
         } else if (str == "recieve") {
-
+            if (write(rw_socket, &answer, sizeof(answer)) == -1)
+                perror("write");
+            while (1) {
+                FD_ZERO(&rfds);
+                FD_SET(rw_socket, &rfds);
+                retval = select(rw_socket+1, &rfds, NULL, NULL, NULL);
+                if (retval) {
+                    if (FD_ISSET(rw_socket,&rfds)) {
+                        if (read(rw_socket, &buf, sizeof(message)) == -1)
+                            perror("read");
+                        printf(buf);
+                        break;
+                    }
+                } else if(retval == -1) {
+                    cout << retval << endl;
+                    handle_error("select");
+                }
+            }
         } else if (str == "compare") {
-
+            if (strcmp(buf, message) == 0)
+                printf("Ok, buf == message\n");
+            else
+                printf("Failed, buf != message\n");
         }
         cout << "=>";
     }
