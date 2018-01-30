@@ -14,7 +14,7 @@ using namespace std;
 
 char message[] = "Hello Terasic!\n";
 char buf[1024];
-char answer[] = "answer me";
+char answer[] = "answer me\n";
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -23,10 +23,10 @@ void handle_error(const char* msg) {
 
 int main(int argc, char* argv[])
 {
-//    if (argc != 2) {
-//        fprintf(stderr, "%s <dotted-address>\n", argv[0]);
-//        exit(EXIT_FAILURE);
-//    }
+    if (argc != 2) {
+        fprintf(stderr, "%s <dotted-address>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
     int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (tcp_socket == -1)
@@ -36,8 +36,7 @@ int main(int argc, char* argv[])
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = 3307;
 
-    if (inet_aton("10.7.14.14", &my_addr.sin_addr) == 0)
-    //if (inet_aton("192.168.0.100", &my_addr.sin_addr) == 0)
+    if (inet_aton(argv[1], &my_addr.sin_addr) == 0)
         handle_error("inet_aton");
 
     if (bind(tcp_socket, (sockaddr *) &my_addr, sizeof(sockaddr_in)) == -1)
@@ -98,7 +97,7 @@ int main(int argc, char* argv[])
                 retval = select(rw_socket+1, &rfds, NULL, NULL, NULL);
                 if (retval) {
                     if (FD_ISSET(rw_socket,&rfds)) {
-                        if (read(rw_socket, &buf, sizeof(message)) == -1)
+                        if (read(rw_socket, &buf, sizeof(buf)) == -1)
                             perror("read");
                         printf(buf);
                         break;
@@ -113,7 +112,13 @@ int main(int argc, char* argv[])
                 printf("Ok, buf == message\n");
             else
                 printf("Failed, buf != message\n");
+        } else if (str == "ch") {
+            getline(cin, str);
+            strcpy(message, str.c_str());
+            message[str.size()]='\n';
+            message[str.size()+1]='\0';
         }
+
         cout << "=>";
     }
 	
