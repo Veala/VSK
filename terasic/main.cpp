@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -10,11 +11,14 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+#define SIZE 500000
+
 using namespace std;
 
-char message[1024];
-char buf[1024];
+char message[SIZE];
+char buf[SIZE];
 const char* answer = "answer me\n";
+ssize_t size = 460932;
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -53,30 +57,50 @@ int main(int argc, char *argv[])
     printf("connected!\n");
 
     fd_set rfds;
+    ssize_t r=0;
     while (1) {
         FD_ZERO(&rfds);
         FD_SET(tcp_socket, &rfds);
+        cout << "xxx" << endl;
         int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
+        cout << "xwwww" << endl;
         if (retval) {
             if (FD_ISSET(tcp_socket,&rfds)) {
-                ssize_t r = read(tcp_socket, &buf, sizeof(buf));
+                r = read(tcp_socket, &buf, sizeof(buf));
+                cout << "r: " << r << endl;
                 if (r == -1)
                     perror("read");
                 if (r == 0)
                     break;
                 if (strcmp(buf, answer) == 0) {
+                    cout << "x" << endl;
                     if (write(tcp_socket, &message, sizeof(message)) == -1)
                         perror("write");
                 } else {
-                    printf(buf);
-                    strcpy(message, buf);
+                    //printf(buf);
+                    strcpy(&message[r], buf);
+                    cout << "continue" << endl;
+                    continue;
                 }
             }
         } else if(retval == -1) {
             handle_error("select -1");
-        } else {
+        }/* else {
             handle_error("select");
+        }*/
+        r=0;
+        cout << "save 0" << endl;
+        ofstream file("file2.pdf", ios_base::binary);
+        cout << "save" << endl;
+        if (file.is_open()) {
+            file.write(message, size);
+            cout << "save 2" << endl;
+            file.close();
+        } else {
+            cout << "Unable to open file" << endl;
+            return 1;
         }
+        cout << "save 3" << endl;
     }
 
     if (close(tcp_socket) == -1)

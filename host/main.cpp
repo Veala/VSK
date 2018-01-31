@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -10,10 +11,12 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+#define SIZE 500000
+
 using namespace std;
 
-char message[] = "Hello Terasic!\n";
-char buf[1024];
+char message[SIZE];
+char buf[SIZE];
 char answer[] = "answer me\n";
 
 void handle_error(const char* msg) {
@@ -23,10 +26,27 @@ void handle_error(const char* msg) {
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2) {
-        fprintf(stderr, "%s <dotted-address>\n", argv[0]);
+    if (argc != 3) {
+        fprintf(stderr, "%s <dotted-address> <file>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+
+    streampos size;
+    ifstream file(argv[2], ios_base::binary | ios_base::ate);
+    if (file.is_open()) {
+        size = file.tellg();
+        if (size > SIZE) {
+            cout << "File size more than 500K" << endl;
+            return 1;
+        }
+        file.seekg (0, ios_base::beg);
+        file.read(message, size);
+        file.close();
+    } else {
+        cout << "Unable to open file" << endl;
+        return 1;
+    }
+
     int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (tcp_socket == -1)
@@ -88,29 +108,34 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
-            if (write(rw_socket, &message, sizeof(message)) == -1)
+            if (write(rw_socket, &message, size) == -1)
                 perror("write");
         } else if (str == "recieve") {
             if (write(rw_socket, &answer, sizeof(answer)) == -1)
                 perror("write");
+            ssize_t r=0;
             while (1) {
                 FD_ZERO(&rfds);
                 FD_SET(rw_socket, &rfds);
                 retval = select(rw_socket+1, &rfds, NULL, NULL, NULL);
                 if (retval) {
                     if (FD_ISSET(rw_socket,&rfds)) {
-                        if (read(rw_socket, &buf, sizeof(buf)) == -1)
+                        r = read(rw_socket, &buf[r], size);
+                        cout << "r: " << r << endl;
+                        if (r == -1)
                             perror("read");
-                        printf(buf);
-                        break;
+                        continue;
+                        //printf(buf);
                     }
                 } else if(retval == -1) {
                     cout << retval << endl;
                     handle_error("select");
                 }
+                r=0;
+                break;
             }
         } else if (str == "compare") {
-            if (strcmp(buf, message) == 0)
+            if (strncmp(buf, message, size) == 0)
                 printf("Ok, buf == message\n");
             else
                 printf("Failed, buf != message\n");
@@ -119,6 +144,15 @@ int main(int argc, char* argv[])
             strcpy(message, str.c_str());
             message[str.size()]='\n';
             message[str.size()+1]='\0';
+        } else if (str == "save") {
+            ofstream file("file2.pdf", ios_base::binary);
+            if (file.is_open()) {
+                file.write(buf, size);
+                file.close();
+            } else {
+                cout << "Unable to open file" << endl;
+                return 1;
+            }
         }
 
         cout << "=>";
