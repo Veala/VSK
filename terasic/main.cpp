@@ -34,9 +34,9 @@ int main(int argc, char *argv[])
 
     sockaddr_in my_addr, peer_addr;
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = 3308;
+    my_addr.sin_port = htons(3308);
     peer_addr.sin_family = AF_INET;
-    peer_addr.sin_port = 3307;
+    peer_addr.sin_port = htons(3307);
 
     if (inet_aton(argv[1], &my_addr.sin_addr) == 0)
         handle_error("inet_aton");
@@ -59,8 +59,11 @@ int main(int argc, char *argv[])
         int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
         if (retval) {
             if (FD_ISSET(tcp_socket,&rfds)) {
-                if (read(tcp_socket, &buf, sizeof(buf)) == -1)
+                ssize_t r = read(tcp_socket, &buf, sizeof(buf));
+                if (r == -1)
                     perror("read");
+                if (r == 0)
+                    break;
                 if (strcmp(buf, answer) == 0) {
                     if (write(tcp_socket, &message, sizeof(message)) == -1)
                         perror("write");

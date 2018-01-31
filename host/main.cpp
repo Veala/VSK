@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 
     sockaddr_in my_addr;
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = 3307;
+    my_addr.sin_port = htons(3307);
 
     if (inet_aton(argv[1], &my_addr.sin_addr) == 0)
         handle_error("inet_aton");
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 
     FD_ZERO(&rfds);
     FD_SET(tcp_socket, &rfds);
-    tv.tv_sec = 5;
+    tv.tv_sec = 50;
     tv.tv_usec = 0;
     int retval = select(tcp_socket+1, &rfds, NULL, NULL, &tv);
     if (retval) {
@@ -65,10 +65,12 @@ int main(int argc, char* argv[])
             if (rw_socket == -1)
                 handle_error("accept");
         } else {
+            FD_ZERO(&rfds);
             printf("No connection.\n");
             return 1;
         }
     } else {
+        FD_ZERO(&rfds);
         printf("No connection within five seconds.\n");
         return 1;
     }
