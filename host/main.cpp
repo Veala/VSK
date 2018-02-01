@@ -31,8 +31,8 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    streampos size;
     ifstream file(argv[2], ios_base::binary | ios_base::ate);
+    streampos size;
     if (file.is_open()) {
         size = file.tellg();
         if (size > SIZE) {
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
     FD_ZERO(&rfds);
     FD_SET(tcp_socket, &rfds);
-    tv.tv_sec = 50;
+    tv.tv_sec = 5;
     tv.tv_usec = 0;
     int retval = select(tcp_socket+1, &rfds, NULL, NULL, &tv);
     if (retval) {
@@ -113,26 +113,25 @@ int main(int argc, char* argv[])
         } else if (str == "recieve") {
             if (write(rw_socket, &answer, sizeof(answer)) == -1)
                 perror("write");
-            ssize_t r=0;
+            ssize_t n=0;
             while (1) {
                 FD_ZERO(&rfds);
                 FD_SET(rw_socket, &rfds);
                 retval = select(rw_socket+1, &rfds, NULL, NULL, NULL);
                 if (retval) {
                     if (FD_ISSET(rw_socket,&rfds)) {
-                        r = read(rw_socket, &buf[r], size);
+                        ssize_t r = read(rw_socket, &buf[r], size);
                         cout << "r: " << r << endl;
+                        n+=r;
                         if (r == -1)
                             perror("read");
+
                         continue;
                         //printf(buf);
                     }
                 } else if(retval == -1) {
-                    cout << retval << endl;
                     handle_error("select");
                 }
-                r=0;
-                break;
             }
         } else if (str == "compare") {
             if (strncmp(buf, message, size) == 0)

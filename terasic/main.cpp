@@ -18,7 +18,7 @@ using namespace std;
 char message[SIZE];
 char buf[SIZE];
 const char* answer = "answer me\n";
-ssize_t size = 460932;
+unsigned int size;
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
         cout << "xwwww" << endl;
         if (retval) {
             if (FD_ISSET(tcp_socket,&rfds)) {
+                r = read(tcp_socket, &buf, sizeof(buf));
                 r = read(tcp_socket, &buf, sizeof(buf));
                 cout << "r: " << r << endl;
                 if (r == -1)
