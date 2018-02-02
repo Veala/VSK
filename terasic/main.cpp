@@ -34,6 +34,12 @@ void handle_error(const char* msg) {
     exit(EXIT_FAILURE);
 }
 
+void checkSend(ssize_t n) {
+    if (n == -1)
+        perror("write");
+    printf("sent: %d bytes\n", n);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
@@ -78,9 +84,9 @@ int main(int argc, char *argv[])
                     perror("read");
                 if (r == 0)
                     break;
+                printf("recv: %d bytes\n", r);
                 if (strncmp(buf, answer, sizeof(answer)) == 0) {
-                    if (write(tcp_socket, &message, size) == -1)
-                        perror("write");
+                    checkSend(write(tcp_socket, &message, size));
                 } else if (strncmp(buf, preSend, sizeof(preSend)) == 0) {
                     size=0;
                 } else {

@@ -27,6 +27,12 @@ void handle_error(const char* msg) {
     exit(EXIT_FAILURE);
 }
 
+void checkSend(ssize_t n) {
+    if (n == -1)
+        perror("write");
+    printf("sent: %d bytes\n", n);
+}
+
 int main(int argc, char* argv[])
 {
     if (argc != 3) {
@@ -110,13 +116,10 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
-            if (write(rw_socket, &preSend, sizeof(preSend)) == -1)
-                perror("write");
-            if (write(rw_socket, &message, size) == -1)
-                perror("write");
-        } else if (str == "recieve") {
-            if (write(rw_socket, &answer, sizeof(answer)) == -1)
-                perror("write");
+            checkSend(write(rw_socket, &preSend, sizeof(preSend)));
+            checkSend(write(rw_socket, &message, size));
+        } else if (str == "recv") {
+            checkSend(write(rw_socket, &answer, sizeof(answer)));
             unsigned int checkedSize = 0;
             while (1) {
                 FD_ZERO(&rfds);
@@ -130,6 +133,8 @@ int main(int argc, char* argv[])
                         if (r == 0)
                             break;
                         checkedSize += r;
+                        printf("recv: %d bytes\n", r);
+
                         if (checkedSize >= size)
                             break;
                     }
@@ -141,7 +146,7 @@ int main(int argc, char* argv[])
                     break;
                 }
             }
-        } else if (str == "compare") {
+        } else if (str == "cmp") {
             if (strncmp(buf, message, size) == 0)
                 printf("Ok, buf == message\n");
             else
