@@ -17,7 +17,8 @@ using namespace std;
 
 char message[SIZE];
 char buf[SIZE];
-const char* answer = "answer me";
+const char* answer = "answer me\n";
+const char* preSend = "send";
 unsigned int size = 0;
 
 char * strncpy_my(char *dest, const char *src, size_t n)
@@ -77,13 +78,16 @@ int main(int argc, char *argv[])
                     perror("read");
                 if (r == 0)
                     break;
-                if (strcmp(buf, answer) == 0) {
-                    if (write(tcp_socket, &message, sizeof(message)) == -1)
+                if (strncmp(buf, answer, sizeof(answer)) == 0) {
+                    cout << "answer" << endl;
+                    if (write(tcp_socket, &message, size) == -1)
                         perror("write");
+                } else if (strncmp(buf, preSend, sizeof(preSend)) == 0) {
+                    cout << "preSend" << endl;
                     size=0;
                 } else {
+                    cout << "else" << endl;
                     size+=r;
-                    //printf(buf);
                     strncpy_my(message+size-r, buf, r);
                 }
             }
@@ -93,16 +97,6 @@ int main(int argc, char *argv[])
             handle_error("select");
         }
     }
-
-//    ofstream file("file2.pdf", ios_base::binary);
-//    if (file.is_open()) {
-//        file.write(buf, size-r);
-//        cout << "save 2" << endl;
-//        file.close();
-//    } else {
-//        cout << "Unable to open file" << endl;
-//        return 1;
-//    }
 
     if (close(tcp_socket) == -1)
         handle_error("close tcp socket");

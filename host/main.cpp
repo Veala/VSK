@@ -17,48 +17,15 @@ using namespace std;
 
 char message[SIZE];
 char buf[SIZE];
-char ansCmd[14] = "answer me";
+char answer[] = "answer me\n";
+char preSend[] = "send";
 
 streampos size;
-int rw_socket;
-fd_set rfds;
-timeval tv;
 
 void handle_error(const char* msg) {
     perror(msg);
     exit(EXIT_FAILURE);
 }
-
-void sendCmd(char* cmd) {
-    if (write(rw_socket, cmd, sizeof(cmd)) == -1)
-        perror("write");
-}
-
-void sendSize(char* cmd) {
-    if (write(rw_socket, cmd, sizeof(cmd)) == -1)
-        perror("write");
-}
-
-void recieveOk() {
-    while (1) {
-        FD_ZERO(&rfds);
-        FD_SET(rw_socket, &rfds);
-        int retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
-        if (retval) {
-            if (FD_ISSET(rw_socket,&rfds)) {
-                int r = read(rw_socket, buf, 2);
-                if (r == -1)
-                    perror("read");
-                if (r>=2) break;
-            }
-        } else {
-            FD_ZERO(&rfds);
-            printf("No recieve within five seconds.\n");
-            return 1;
-        }
-    }
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -102,6 +69,9 @@ int main(int argc, char* argv[])
 
     printf("listening...\n");
 
+    fd_set rfds;
+    timeval tv;
+    int rw_socket;
     sockaddr_in peer_addr;
     socklen_t peer_addr_size = sizeof(sockaddr_in);
 
@@ -140,36 +110,35 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
-            char data[] = "data";
-            char str_size[9];
-            itoa(size, str_size, 10);
-            sendCmd(strcat(data,str_size));
-//            ssize_t s = write(rw_socket, &message, size);
-//            if (s == -1)
-//                perror("write");
-            recieveOk();
-            if (strcmp(buf, "Ok") != 0)
-
-
+            if (write(rw_socket, &preSend, sizeof(preSend)) == -1)
+                perror("write");
+            if (write(rw_socket, &message, size) == -1)
+                perror("write");
         } else if (str == "recieve") {
             if (write(rw_socket, &answer, sizeof(answer)) == -1)
                 perror("write");
-            ssize_t n=0;
+            unsigned int checkedSize = 0;
             while (1) {
                 FD_ZERO(&rfds);
                 FD_SET(rw_socket, &rfds);
-                retval = select(rw_socket+1, &rfds, NULL, NULL, NULL);
+                retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
                 if (retval) {
                     if (FD_ISSET(rw_socket,&rfds)) {
-                        ssize_t r = read(rw_socket, &buf[r], size);
-                        n+=r;
+                        ssize_t r = read(rw_socket, &buf[checkedSize], size);
                         if (r == -1)
                             perror("read");
-                        continue;
-                        //printf(buf);
+                        if (r == 0)
+                            break;
+                        checkedSize += r;
+                        if (checkedSize >= size)
+                            break;
                     }
                 } else if(retval == -1) {
                     handle_error("select");
+                } else {
+                    FD_ZERO(&rfds);
+                    printf("No data within five seconds.\n");
+                    break;
                 }
             }
         } else if (str == "compare") {
