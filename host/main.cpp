@@ -151,6 +151,7 @@ int main(int argc, char* argv[])
             strcpy(message, str.c_str());
             message[str.size()]='\n';
             message[str.size()+1]='\0';
+            size = str.size()+2;
         } else if (str == "save") {
             ofstream file("file2.pdf", ios_base::binary);
             if (file.is_open()) {

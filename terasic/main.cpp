@@ -79,14 +79,11 @@ int main(int argc, char *argv[])
                 if (r == 0)
                     break;
                 if (strncmp(buf, answer, sizeof(answer)) == 0) {
-                    cout << "answer" << endl;
                     if (write(tcp_socket, &message, size) == -1)
                         perror("write");
                 } else if (strncmp(buf, preSend, sizeof(preSend)) == 0) {
-                    cout << "preSend" << endl;
                     size=0;
                 } else {
-                    cout << "else" << endl;
                     size+=r;
                     strncpy_my(message+size-r, buf, r);
                 }
