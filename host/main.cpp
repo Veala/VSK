@@ -12,15 +12,29 @@
 #include <string.h>
 
 #define SIZE 500000
+#define CMDSIZE 10
+#define ERROR_TIME 1
+#define ERROR_CONNECTION 2
+#define ERROR_READ 3
+#define NO_ERROR 4
+#define checkError(err)\
+        if (err == ERROR_CONNECTION) break;\
+        if (err == ERROR_TIME) continue;\
+        if (err == ERROR_READ) continue;\
 
 using namespace std;
 
 char message[SIZE];
 char buf[SIZE];
-char answer[] = "answer me\n";
-char preSend[10];
+char answer[CMDSIZE] = "answer";
+char Ok[CMDSIZE] = "Ok";
+char preSend[CMDSIZE];
 
-streampos size;
+int tcp_socket, rw_socket;
+fd_set rfds;
+timeval tv;
+streampos fsize;
+int intfsize;
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -33,28 +47,42 @@ void checkSend(ssize_t n) {
     printf("sent: %ld bytes\n", n);
 }
 
-//int readData(int &rw_socket, fd_set &rfds, int &n) {
-//    FD_ZERO(&rfds);
-//    FD_SET(rw_socket, &rfds);
-//    retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
-//    if (retval) {
-//        if (FD_ISSET(rw_socket,&rfds)) {
-//            ssize_t r = read(rw_socket, &buf[n], 2);
-//            if (r == -1) perror("read");
-//            if (r == 0) break;
-//            printf("recv: %ld bytes\n", r);
-//            if ((r == 2) && (strncmp(buf, "Ok", r) == 0))
-//                checkSend(write(rw_socket, &message, (size_t)size));
-//             else
-//                printf("\"Ok\" is not received");
-//        }
-//    } else if(retval == -1) {
-//        handle_error("select");
-//    } else {
-//        FD_ZERO(&rfds);
-//        printf("No data within five seconds.\n");
-//    }
-//}
+int readData(int &n, ssize_t &r, int& size) {
+    FD_ZERO(&rfds);
+    FD_SET(rw_socket, &rfds);
+    int retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
+    if (retval) {
+        if (FD_ISSET(rw_socket,&rfds)) {
+            r = read(rw_socket, &buf[n], size - n);
+            if (r == -1) {
+                perror("read");
+                return ERROR_READ;
+            }
+            if (r == 0) {
+                perror("connection");
+                return ERROR_CONNECTION;
+            }
+            printf("recv: %ld bytes\n", r);
+            return NO_ERROR;
+        }
+    } else if(retval == -1) {
+        handle_error("select");
+    } else {
+        FD_ZERO(&rfds);
+        printf("No data within five seconds.\n");
+        return ERROR_TIME;
+    }
+}
+
+int readAllData(int &n, int& size) {
+    ssize_t r=0;
+    while (1) {
+        int err = readData(n, r, size);
+        if (err != NO_ERROR) return err;
+        n+=r;
+        if (n>=size) return NO_ERROR;
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -65,20 +93,21 @@ int main(int argc, char* argv[])
 
     ifstream file(argv[2], ios_base::binary | ios_base::ate);
     if (file.is_open()) {
-        size = file.tellg();
-        if (size > SIZE) {
+        fsize = file.tellg();
+        intfsize = fsize;
+        if (fsize > SIZE) {
             cout << "File size more than 500K" << endl;
             return 1;
         }
         file.seekg (0, ios_base::beg);
-        file.read(message, size);
+        file.read(message, fsize);
         file.close();
     } else {
         cout << "Unable to open file" << endl;
         return 1;
     }
 
-    int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+    tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (tcp_socket == -1)
         handle_error("tcp_socket error");
@@ -98,9 +127,6 @@ int main(int argc, char* argv[])
 
     printf("listening...\n");
 
-    fd_set rfds;
-    timeval tv;
-    int rw_socket;
     sockaddr_in peer_addr;
     socklen_t peer_addr_size = sizeof(sockaddr_in);
 
@@ -139,57 +165,26 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
-            sprintf(preSend, "%ld", (size_t)size);
+            sprintf(preSend, "%ld", (size_t)fsize);
             checkSend(write(rw_socket, &preSend, sizeof(preSend)));
-
-            FD_ZERO(&rfds);
-            FD_SET(rw_socket, &rfds);
-            retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
-            if (retval) {
-                if (FD_ISSET(rw_socket,&rfds)) {
-                    ssize_t r = read(rw_socket, buf, 2);
-                    if (r == -1) perror("read");
-                    if (r == 0) break;
-                    printf("recv: %ld bytes\n", r);
-                    if ((r == 2) && (strncmp(buf, "Ok", r) == 0))
-                        checkSend(write(rw_socket, &message, (size_t)size));
-                     else
-                        printf("\"Ok\" is not received");
-                }
-            } else if(retval == -1) {
-                handle_error("select");
-            } else {
-                FD_ZERO(&rfds);
-                printf("No data within five seconds.\n");
-            }
+            int recvCmdSize = sizeof(Ok), n=0;
+            int err = readAllData(n, recvCmdSize);
+            checkError(err)
+            if ((n == recvCmdSize) && (strncmp(buf, Ok, recvCmdSize) == 0))
+                    checkSend(write(rw_socket, &message, (size_t)fsize));
+            else
+                printf("\"Ok\" is not received\n");
         } else if (str == "recv") {
             checkSend(write(rw_socket, &answer, sizeof(answer)));
-            unsigned int checkedSize = 0;
-            while (1) {
-                FD_ZERO(&rfds);
-                FD_SET(rw_socket, &rfds);
-                retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
-                if (retval) {
-                    if (FD_ISSET(rw_socket,&rfds)) {
-                        ssize_t r = read(rw_socket, &buf[checkedSize], (size_t)size-checkedSize);
-
-                        if (r == -1) perror("read");
-                        if (r == 0) break;
-                        checkedSize += r;
-                        printf("recv: %ld bytes\n", r);
-
-                        if (checkedSize >= size) break;
-                    }
-                } else if(retval == -1) {
-                    handle_error("select");
-                } else {
-                    FD_ZERO(&rfds);
-                    printf("No data within five seconds.\n");
-                    break;
-                }
-            }
+            int n=0;
+            int err = readAllData(n, intfsize);
+            checkError(err)
+            if (n == intfsize)
+                printf("Data received\n");
+            else
+                printf("Too big data\n");
         } else if (str == "cmp") {
-            if (strncmp(buf, message, size) == 0)
+            if (memcmp(buf, message, intfsize) == 0)
                 printf("Ok, buf == message\n");
             else
                 printf("Failed, buf != message\n");
@@ -198,11 +193,12 @@ int main(int argc, char* argv[])
             strcpy(message, str.c_str());
             message[str.size()]='\n';
             message[str.size()+1]='\0';
-            size = str.size()+2;
+            fsize = str.size()+2;
+            intfsize = fsize;
         } else if (str == "save") {
             ofstream file("file2.pdf", ios_base::binary);
             if (file.is_open()) {
-                file.write(buf, size);
+                file.write(buf, fsize);
                 file.close();
             } else {
                 cout << "Unable to open file" << endl;

@@ -1,5 +1,3 @@
-#include <iostream>
-#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -12,22 +10,26 @@
 #include <string.h>
 
 #define SIZE 500000
-
-using namespace std;
+#define CMDSIZE 10
+#define ERROR_TIME 1
+#define ERROR_CONNECTION 2
+#define ERROR_READ 3
+#define NO_ERROR 4
+#define checkError(err)\
+        if (err == ERROR_CONNECTION) break;\
+        if (err == ERROR_TIME) continue;\
+        if (err == ERROR_READ) continue;\
 
 char message[SIZE];
 char buf[SIZE];
-const char* answer = "answer me\n";
-const char* preSend = "send";
-unsigned int size = 0;
+char answer[CMDSIZE] = "answer";
+//const char* preSend = "send";
+char Ok[CMDSIZE] = "Ok";
 
-char * strncpy_my(char *dest, const char *src, size_t n)
-{
-    size_t i;
-    for (i = 0; i < n; i++)
-        dest[i] = src[i];
-    return dest;
-}
+int tcp_socket;
+fd_set rfds;
+timeval tv;
+int size = 0;
 
 void handle_error(const char* msg) {
     perror(msg);
@@ -40,6 +42,43 @@ void checkSend(ssize_t n) {
     printf("sent: %ld bytes\n", n);
 }
 
+int readData(int &n, ssize_t &r, int& size, char (&refArray)[SIZE], timeval* tv) {
+    FD_ZERO(&rfds);
+    FD_SET(tcp_socket, &rfds);
+    int retval = select(tcp_socket+1, &rfds, NULL, NULL, tv);
+    if (retval) {
+        if (FD_ISSET(tcp_socket,&rfds)) {
+            r = read(tcp_socket, &refArray[n], size - n);
+            if (r == -1) {
+                perror("read");
+                return ERROR_READ;
+            }
+            if (r == 0) {
+                perror("connection");
+                return ERROR_CONNECTION;
+            }
+            printf("recv: %ld bytes\n", r);
+            return NO_ERROR;
+        }
+    } else if(retval == -1) {
+        handle_error("select");
+    } else {
+        FD_ZERO(&rfds);
+        printf("No data within five seconds.\n");
+        return ERROR_TIME;
+    }
+}
+
+int readAllData(int &n, int& size, char (&refArray)[SIZE], timeval* tv) {
+    ssize_t r=0;
+    while (1) {
+        int err = readData(n, r, size, refArray, tv);
+        if (err != NO_ERROR) return err;
+        n+=r;
+        if (n>=size) return NO_ERROR;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
@@ -47,7 +86,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    int tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
+    tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_socket == -1)
         handle_error("tcp_socket error");
 
@@ -71,49 +110,59 @@ int main(int argc, char *argv[])
 
     printf("connected!\n");
 
-    fd_set rfds;
-    unsigned int curSize = 0;
-    ssize_t r=0;
-    enum {
-        fBuf,
-        fMes
-    } flag;
-    flag = fBuf;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
     while (1) {
-        FD_ZERO(&rfds);
-        FD_SET(tcp_socket, &rfds);
-        int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
-        if (retval) {
-            if (FD_ISSET(tcp_socket,&rfds)) {
-                if (flag == fBuf) r = read(tcp_socket, buf, sizeof(buf));
-                if (flag == fMes) r = read(tcp_socket, &message[curSize], size-curSize);
-
-                if (r == -1) perror("read");
-                if (r == 0) break;
-                printf("recv: %ld bytes\n", r);
-
-                if(flag == fMes) {
-                    curSize+=r;
-                    if (curSize >= size) flag = fBuf;
-                } else if(flag == fBuf) {
-                    if (strncmp(buf, answer, sizeof(answer)) == 0) {
-                        checkSend(write(tcp_socket, &message, size));
-                    } else if (r>0 && r<=10) {
-                        size=atoi(buf);
-                        printf("size: %d\n", size);
-                        curSize=0;
-                        flag = fMes;
-                        checkSend(write(tcp_socket, "Ok", 2));
-                    } else {
-                        printf("recv unknown cmd\n");
-                    }
-                }
-            }
-        } else if(retval == -1) {
-            handle_error("select -1");
-        } else {
-            handle_error("select");
+        int n=0;
+        int recvCmdSize = sizeof(Ok); // or sizeof(answer) == CMDSIZE
+        int err = readAllData(n, recvCmdSize, buf, NULL);
+        checkError(err)
+        if ((n == recvCmdSize) && (strcmp(buf, answer) == 0)) {
+            checkSend(write(tcp_socket, &message, size));
+        } else if (n == recvCmdSize) {
+            size=atoi(buf);
+            printf("size: %d\n", size);
+            checkSend(write(tcp_socket, Ok, sizeof(Ok)));
+            n=0;
+            err = readAllData(n, size, message, &tv);
+            checkError(err)
         }
+
+//        FD_ZERO(&rfds);
+//        FD_SET(tcp_socket, &rfds);
+//        int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
+//        if (retval) {
+//            if (FD_ISSET(tcp_socket,&rfds)) {
+//                if (flag == fBuf) r = read(tcp_socket, buf, sizeof(buf));
+//                if (flag == fMes) r = read(tcp_socket, &message[curSize], size-curSize);
+
+//                if (r == -1) perror("read");
+//                if (r == 0) break;
+//                printf("recv: %ld bytes\n", r);
+
+//                if(flag == fMes) {
+//                    curSize+=r;
+//                    if (curSize >= size) flag = fBuf;
+//                } else if(flag == fBuf) {
+//                    if (strncmp(buf, answer, sizeof(answer)) == 0) {
+//                        checkSend(write(tcp_socket, &message, size));
+//                    } else if (r>0 && r<=10) {
+//                        size=atoi(buf);
+//                        printf("size: %d\n", size);
+//                        curSize=0;
+//                        flag = fMes;
+//                        checkSend(write(tcp_socket, Ok, sizeof(Ok)));
+//                    } else {
+//                        printf("recv unknown cmd\n");
+//                    }
+//                }
+//            }
+//        } else if(retval == -1) {
+//            handle_error("select -1");
+//        } else {
+//            handle_error("select");
+//        }
     }
 
     if (close(tcp_socket) == -1)
