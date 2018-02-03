@@ -128,41 +128,6 @@ int main(int argc, char *argv[])
             err = readAllData(n, size, message, &tv);
             checkError(err)
         }
-
-//        FD_ZERO(&rfds);
-//        FD_SET(tcp_socket, &rfds);
-//        int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
-//        if (retval) {
-//            if (FD_ISSET(tcp_socket,&rfds)) {
-//                if (flag == fBuf) r = read(tcp_socket, buf, sizeof(buf));
-//                if (flag == fMes) r = read(tcp_socket, &message[curSize], size-curSize);
-
-//                if (r == -1) perror("read");
-//                if (r == 0) break;
-//                printf("recv: %ld bytes\n", r);
-
-//                if(flag == fMes) {
-//                    curSize+=r;
-//                    if (curSize >= size) flag = fBuf;
-//                } else if(flag == fBuf) {
-//                    if (strncmp(buf, answer, sizeof(answer)) == 0) {
-//                        checkSend(write(tcp_socket, &message, size));
-//                    } else if (r>0 && r<=10) {
-//                        size=atoi(buf);
-//                        printf("size: %d\n", size);
-//                        curSize=0;
-//                        flag = fMes;
-//                        checkSend(write(tcp_socket, Ok, sizeof(Ok)));
-//                    } else {
-//                        printf("recv unknown cmd\n");
-//                    }
-//                }
-//            }
-//        } else if(retval == -1) {
-//            handle_error("select -1");
-//        } else {
-//            handle_error("select");
-//        }
     }
 
     if (close(tcp_socket) == -1)
