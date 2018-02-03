@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/select.h>
-#include <sys/time.h>
+//#include <sys/types.h>
+//#include <sys/select.h>
+//#include <sys/time.h>
 #include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+//#include <sys/socket.h>
+//#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
 
