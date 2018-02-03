@@ -37,7 +37,7 @@ void handle_error(const char* msg) {
 void checkSend(ssize_t n) {
     if (n == -1)
         perror("write");
-    printf("sent: %d bytes\n", n);
+    printf("sent: %ld bytes\n", n);
 }
 
 int main(int argc, char *argv[])
@@ -72,26 +72,41 @@ int main(int argc, char *argv[])
     printf("connected!\n");
 
     fd_set rfds;
+    unsigned int curSize = 0;
     ssize_t r=0;
+    enum {
+        fBuf,
+        fMes
+    } flag;
+    flag = fBuf;
     while (1) {
         FD_ZERO(&rfds);
         FD_SET(tcp_socket, &rfds);
         int retval = select(tcp_socket+1, &rfds, NULL, NULL, NULL);
         if (retval) {
             if (FD_ISSET(tcp_socket,&rfds)) {
-                r = read(tcp_socket, buf, sizeof(buf));
-                if (r == -1)
-                    perror("read");
-                if (r == 0)
-                    break;
-                printf("recv: %d bytes\n", r);
-                if (strncmp(buf, answer, sizeof(answer)) == 0) {
-                    checkSend(write(tcp_socket, &message, size));
-                } else if (strncmp(buf, preSend, sizeof(preSend)) == 0) {
-                    size=0;
-                } else {
-                    size+=r;
-                    strncpy_my(message+size-r, buf, r);
+                if (flag == fBuf) r = read(tcp_socket, buf, sizeof(buf));
+                if (flag == fMes) r = read(tcp_socket, &message[curSize], size-curSize);
+
+                if (r == -1) perror("read");
+                if (r == 0) break;
+                printf("recv: %ld bytes\n", r);
+
+                if(flag == fMes) {
+                    curSize+=r;
+                    if (curSize >= size) flag = fBuf;
+                } else if(flag == fBuf) {
+                    if (strncmp(buf, answer, sizeof(answer)) == 0) {
+                        checkSend(write(tcp_socket, &message, size));
+                    } else if (r>0 && r<=10) {
+                        size=atoi(buf);
+                        printf("size: %d\n", size);
+                        curSize=0;
+                        flag = fMes;
+                        checkSend(write(tcp_socket, "Ok", 2));
+                    } else {
+                        printf("recv unknown cmd\n");
+                    }
                 }
             }
         } else if(retval == -1) {

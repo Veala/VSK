@@ -18,7 +18,7 @@ using namespace std;
 char message[SIZE];
 char buf[SIZE];
 char answer[] = "answer me\n";
-char preSend[] = "send";
+char preSend[10];
 
 streampos size;
 
@@ -30,8 +30,31 @@ void handle_error(const char* msg) {
 void checkSend(ssize_t n) {
     if (n == -1)
         perror("write");
-    printf("sent: %d bytes\n", n);
+    printf("sent: %ld bytes\n", n);
 }
+
+//int readData(int &rw_socket, fd_set &rfds, int &n) {
+//    FD_ZERO(&rfds);
+//    FD_SET(rw_socket, &rfds);
+//    retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
+//    if (retval) {
+//        if (FD_ISSET(rw_socket,&rfds)) {
+//            ssize_t r = read(rw_socket, &buf[n], 2);
+//            if (r == -1) perror("read");
+//            if (r == 0) break;
+//            printf("recv: %ld bytes\n", r);
+//            if ((r == 2) && (strncmp(buf, "Ok", r) == 0))
+//                checkSend(write(rw_socket, &message, (size_t)size));
+//             else
+//                printf("\"Ok\" is not received");
+//        }
+//    } else if(retval == -1) {
+//        handle_error("select");
+//    } else {
+//        FD_ZERO(&rfds);
+//        printf("No data within five seconds.\n");
+//    }
+//}
 
 int main(int argc, char* argv[])
 {
@@ -116,8 +139,29 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
+            sprintf(preSend, "%ld", (size_t)size);
             checkSend(write(rw_socket, &preSend, sizeof(preSend)));
-            checkSend(write(rw_socket, &message, size));
+
+            FD_ZERO(&rfds);
+            FD_SET(rw_socket, &rfds);
+            retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
+            if (retval) {
+                if (FD_ISSET(rw_socket,&rfds)) {
+                    ssize_t r = read(rw_socket, buf, 2);
+                    if (r == -1) perror("read");
+                    if (r == 0) break;
+                    printf("recv: %ld bytes\n", r);
+                    if ((r == 2) && (strncmp(buf, "Ok", r) == 0))
+                        checkSend(write(rw_socket, &message, (size_t)size));
+                     else
+                        printf("\"Ok\" is not received");
+                }
+            } else if(retval == -1) {
+                handle_error("select");
+            } else {
+                FD_ZERO(&rfds);
+                printf("No data within five seconds.\n");
+            }
         } else if (str == "recv") {
             checkSend(write(rw_socket, &answer, sizeof(answer)));
             unsigned int checkedSize = 0;
@@ -127,16 +171,14 @@ int main(int argc, char* argv[])
                 retval = select(rw_socket+1, &rfds, NULL, NULL, &tv);
                 if (retval) {
                     if (FD_ISSET(rw_socket,&rfds)) {
-                        ssize_t r = read(rw_socket, &buf[checkedSize], size);
-                        if (r == -1)
-                            perror("read");
-                        if (r == 0)
-                            break;
-                        checkedSize += r;
-                        printf("recv: %d bytes\n", r);
+                        ssize_t r = read(rw_socket, &buf[checkedSize], (size_t)size-checkedSize);
 
-                        if (checkedSize >= size)
-                            break;
+                        if (r == -1) perror("read");
+                        if (r == 0) break;
+                        checkedSize += r;
+                        printf("recv: %ld bytes\n", r);
+
+                        if (checkedSize >= size) break;
                     }
                 } else if(retval == -1) {
                     handle_error("select");
