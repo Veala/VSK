@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
             n=0;
             err = readAllData(n, size, message, &tv);
             checkError(err)
+            checkSend(write(tcp_socket, Ok, sizeof(Ok)));
         }
     }
 

@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+//#include <rpc/auth_des.h>
 
 #define SIZE 500000
 #define CMDSIZE 10
@@ -32,7 +33,7 @@ char preSend[CMDSIZE];
 
 int tcp_socket, rw_socket;
 fd_set rfds;
-timeval tv;
+timeval tv, startTime, endTime;
 streampos fsize;
 int intfsize;
 
@@ -165,16 +166,36 @@ int main(int argc, char* argv[])
                 handle_error("close rw socket");
             break;
         } else if (str == "send") {
+            if (gettimeofday(&startTime, NULL) != 0)
+                printf("Start time is fail\n");
+            cout << startTime.tv_sec  << "s, " << startTime.tv_usec << "mks" << endl;
             sprintf(preSend, "%ld", (size_t)fsize);
             checkSend(write(rw_socket, &preSend, sizeof(preSend)));
             int recvCmdSize = sizeof(Ok), n=0;
             int err = readAllData(n, recvCmdSize);
             checkError(err)
-            if ((n == recvCmdSize) && (strncmp(buf, Ok, recvCmdSize) == 0))
-                    checkSend(write(rw_socket, &message, (size_t)fsize));
-            else
+            if (!((n == recvCmdSize) && (strncmp(buf, Ok, recvCmdSize) == 0))) {
                 printf("\"Ok\" is not received\n");
+                continue;
+            }
+            checkSend(write(rw_socket, &message, (size_t)fsize));
+            n=0;
+            err = readAllData(n, recvCmdSize);
+            checkError(err)
+            if (!((n == recvCmdSize) && (strncmp(buf, Ok, recvCmdSize) == 0))) {
+                printf("\"Ok\" is not received\n");
+                continue;
+            }
+            if (gettimeofday(&endTime, NULL) != 0)
+                printf("End time is fail\n");
+            cout << endTime.tv_sec  << "s, " << endTime.tv_usec << "mks" << endl;
+            long double time = (long double)(endTime.tv_sec - startTime.tv_sec) + (long double)(endTime.tv_usec - startTime.tv_usec)/1000000;
+            cout << time  << "s" << endl;
+            long double speed = ((long double)intfsize)/((long double)(1024*1024)*time);
+            printf("Speed in the send: %6.2Lf MByte/s\n", speed);
         } else if (str == "recv") {
+            if (gettimeofday(&startTime, NULL) != 0)
+                printf("Start time is fail\n");
             checkSend(write(rw_socket, &answer, sizeof(answer)));
             int n=0;
             int err = readAllData(n, intfsize);
@@ -183,6 +204,13 @@ int main(int argc, char* argv[])
                 printf("Data received\n");
             else
                 printf("Too big data\n");
+
+            if (gettimeofday(&endTime, NULL) != 0)
+                printf("End time is fail\n");
+            long double time = (long double)(endTime.tv_sec - startTime.tv_sec) + (long double)(endTime.tv_usec - startTime.tv_usec)/1000000;
+            long double speed = ((long double)intfsize)/((long double)(1024*1024)*time);
+            printf("Speed in the recv: %6.2Lf MByte/s\n", speed);
+
         } else if (str == "cmp") {
             if (memcmp(buf, message, intfsize) == 0)
                 printf("Ok, buf == message\n");
