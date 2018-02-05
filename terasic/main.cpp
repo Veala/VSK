@@ -9,9 +9,9 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-//#define debug
+#define debug
 
-#define SIZE 500000
+#define SIZE 2000000
 #define CMDSIZE 10
 #define ERROR_TIME 1
 #define ERROR_CONNECTION 2

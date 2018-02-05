@@ -12,10 +12,10 @@
 #include <string.h>
 //#include <rpc/auth_des.h>
 
-//#define debug
+#define debug
 #define debug_time
 
-#define SIZE 500000
+#define SIZE 2000000
 #define CMDSIZE 10
 #define ERROR_TIME 1
 #define ERROR_CONNECTION 2
@@ -48,9 +48,9 @@ void handle_error(const char* msg) {
 void checkSend(ssize_t n) {
     if (n == -1)
         perror("write");
-    #ifdef debug
+#ifdef debug
     printf("sent: %ld bytes\n", n);
-    #endif
+#endif
 }
 
 int readData(int &n, ssize_t &r, int& size) {
@@ -68,9 +68,9 @@ int readData(int &n, ssize_t &r, int& size) {
                 perror("connection");
                 return ERROR_CONNECTION;
             }
-            #ifdef debug
+#ifdef debug
             printf("recv: %ld bytes\n", r);
-            #endif
+#endif
             return NO_ERROR;
         }
     } else if(retval == -1) {
@@ -175,9 +175,9 @@ int main(int argc, char* argv[])
         } else if (str == "send") {
             if (gettimeofday(&startTime, NULL) != 0)
                 printf("Start time is fail\n");
-            #ifdef debug_time
+#ifdef debug_time
             cout << startTime.tv_sec  << "s, " << startTime.tv_usec << "mks" << endl;
-            #endif
+#endif
             sprintf(preSend, "%ld", (size_t)fsize);
             checkSend(write(rw_socket, &preSend, sizeof(preSend)));
             int recvCmdSize = sizeof(Ok), n=0;
@@ -199,15 +199,18 @@ int main(int argc, char* argv[])
                 printf("End time is fail\n");
             long double time = (long double)(endTime.tv_sec - startTime.tv_sec) + (long double)(endTime.tv_usec - startTime.tv_usec)/1000000;
             long double speed = ((long double)intfsize)/((long double)(1024*1024)*time);
-            #ifdef debug_time
+#ifdef debug_time
             cout << endTime.tv_sec  << "s, " << endTime.tv_usec << "mks" << endl;
             cout << time  << "s" << endl;
-            #endif
+#endif
             printf("Speed in the send: %6.2Lf MByte/s\n", speed);
         } else if (str == "recv") {
             if (gettimeofday(&startTime, NULL) != 0)
                 printf("Start time is fail\n");
-            //cout << startTime.tv_sec  << "s, " << startTime.tv_usec << "mks" << endl;
+#ifdef debug_time
+            cout << startTime.tv_sec  << "s, " << startTime.tv_usec << "mks" << endl;
+#endif
+
             checkSend(write(rw_socket, &answer, sizeof(answer)));
             int n=0;
             int err = readAllData(n, intfsize);
@@ -221,10 +224,10 @@ int main(int argc, char* argv[])
                 printf("End time is fail\n");
             long double time = (long double)(endTime.tv_sec - startTime.tv_sec) + (long double)(endTime.tv_usec - startTime.tv_usec)/1000000;
             long double speed = ((long double)intfsize)/((long double)(1024*1024)*time);
-            #ifdef debug_time
+#ifdef debug_time
             cout << endTime.tv_sec  << "s, " << endTime.tv_usec << "mks" << endl;
             cout << time  << "s" << endl;
-            #endif
+#endif
             printf("Speed in the recv: %6.2Lf MByte/s\n", speed);
 
         } else if (str == "cmp") {
