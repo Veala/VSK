@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <string.h>
 
+//#define debug
+
 #define SIZE 500000
 #define CMDSIZE 10
 #define ERROR_TIME 1
@@ -39,7 +41,9 @@ void handle_error(const char* msg) {
 void checkSend(ssize_t n) {
     if (n == -1)
         perror("write");
+    #ifdef debug
     printf("sent: %ld bytes\n", n);
+    #endif
 }
 
 int readData(int &n, ssize_t &r, int& size, char (&refArray)[SIZE], timeval* tv) {
@@ -57,7 +61,9 @@ int readData(int &n, ssize_t &r, int& size, char (&refArray)[SIZE], timeval* tv)
                 perror("connection");
                 return ERROR_CONNECTION;
             }
+            #ifdef debug
             printf("recv: %ld bytes\n", r);
+            #endif
             return NO_ERROR;
         }
     } else if(retval == -1) {
@@ -122,7 +128,9 @@ int main(int argc, char *argv[])
             checkSend(write(tcp_socket, &message, size));
         } else if (n == recvCmdSize) {
             size=atoi(buf);
+            #ifdef debug
             printf("size: %d\n", size);
+            #endif
             checkSend(write(tcp_socket, Ok, sizeof(Ok)));
             n=0;
             err = readAllData(n, size, message, &tv);
