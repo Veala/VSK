@@ -17,7 +17,7 @@
 #define NO_ERROR 4
 #define checkError(err)\
         if (err == ERROR_CONNECTION) break;\
-        if (err == ERROR_TIME) continue;\
+        if (err == ERROR_TIME) { tv.tv_sec = 5; continue; }\
         if (err == ERROR_READ) continue;\
 
 char message[SIZE];

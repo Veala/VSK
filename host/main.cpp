@@ -20,7 +20,7 @@
 #define NO_ERROR 4
 #define checkError(err)\
         if (err == ERROR_CONNECTION) break;\
-        if (err == ERROR_TIME) continue;\
+        if (err == ERROR_TIME) { tv.tv_sec = 5; continue; }\
         if (err == ERROR_READ) continue;\
 
 using namespace std;
@@ -196,6 +196,7 @@ int main(int argc, char* argv[])
         } else if (str == "recv") {
             if (gettimeofday(&startTime, NULL) != 0)
                 printf("Start time is fail\n");
+            cout << startTime.tv_sec  << "s, " << startTime.tv_usec << "mks" << endl;
             checkSend(write(rw_socket, &answer, sizeof(answer)));
             int n=0;
             int err = readAllData(n, intfsize);
@@ -207,7 +208,9 @@ int main(int argc, char* argv[])
 
             if (gettimeofday(&endTime, NULL) != 0)
                 printf("End time is fail\n");
+            cout << endTime.tv_sec  << "s, " << endTime.tv_usec << "mks" << endl;
             long double time = (long double)(endTime.tv_sec - startTime.tv_sec) + (long double)(endTime.tv_usec - startTime.tv_usec)/1000000;
+            cout << time  << "s" << endl;
             long double speed = ((long double)intfsize)/((long double)(1024*1024)*time);
             printf("Speed in the recv: %6.2Lf MByte/s\n", speed);
 
