@@ -1,13 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
-//#include <sys/types.h>
-//#include <sys/select.h>
-//#include <sys/time.h>
+//#include <sys/types.h> //
+//#include <sys/select.h> //
+//#include <sys/time.h> //
 #include <unistd.h>
-//#include <sys/socket.h>
-//#include <netinet/in.h>
+//#include <sys/socket.h> //
+//#include <netinet/in.h> //
 #include <arpa/inet.h>
 #include <string.h>
+#include <errno.h>
 
 #define debug
 
@@ -118,6 +119,47 @@ int main(int argc, char *argv[])
 
     tv.tv_sec = 5;
     tv.tv_usec = 0;
+
+
+    //setsockopt getsockopt--------------------
+    int rcb;
+    int rcvbufsize_d = 100000;
+    int rcvbufsize_;
+    socklen_t l1 = (socklen_t)sizeof(int);
+    socklen_t l2 = (socklen_t)sizeof(int);
+
+    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_d, l1);
+    if (rcb == -1)
+        printf("error rcvbufsize write, errno: %d\n", errno);
+    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_, &l1);
+    if (rcb == -1)
+        printf("error rcvbufsize, errno: %d\n", errno);
+    else if (rcb == 0)
+        printf("rcvbufsize: %d\n", rcvbufsize_);
+
+
+    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_d, l1);
+    if (rcb == -1)
+        printf("error rcvbufsize write, errno: %d\n", errno);
+    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_, &l1);
+    if (rcb == -1)
+        printf("error rcvbufsize, errno: %d\n", errno);
+    else if (rcb == 0)
+        printf("rcvbufsize: %d\n", rcvbufsize_);
+
+    //--------------------
+    int one = 0;
+    int two;
+    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
+    if (rcb == -1)
+        printf("error one, errno: %d\n", errno);
+    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&two, &l2);
+    if (rcb == 0)
+        printf("two: %d\n", two);
+    else if (rcb == -1)
+        printf("error two, errno: %d\n", errno);
+    //setsockopt getsockopt--------------------
+
 
     while (1) {
         int n=0;

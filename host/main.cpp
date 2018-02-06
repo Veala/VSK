@@ -6,11 +6,12 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
 //#include <rpc/auth_des.h>
+#include <errno.h>
 
 #define debug
 #define debug_time
@@ -162,6 +163,46 @@ int main(int argc, char* argv[])
 
     if (close(tcp_socket) == -1)
         handle_error("close tcp socket");
+
+    //setsockopt getsockopt--------------------
+    int rcb;
+    int rcvbufsize_d = 100000;
+    int rcvbufsize_d2 = 5000;
+    int rcvbufsize_;
+    socklen_t l1 = (socklen_t)sizeof(int);
+    socklen_t l2 = (socklen_t)sizeof(int);
+
+    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_d2, l1);
+    if (rcb == -1)
+        printf("error rcvbufsize write, errno: %d\n", errno);
+    rcb = getsockopt(rw_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_, &l1);
+    if (rcb == -1)
+        printf("error rcvbufsize, errno: %d\n", errno);
+    else if (rcb == 0)
+        printf("rcvbufsize: %d\n", rcvbufsize_);
+
+
+    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_d, l1);
+    if (rcb == -1)
+        printf("error rcvbufsize write, errno: %d\n", errno);
+    rcb = getsockopt(rw_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_, &l1);
+    if (rcb == -1)
+        printf("error rcvbufsize, errno: %d\n", errno);
+    else if (rcb == 0)
+        printf("rcvbufsize: %d\n", rcvbufsize_);
+
+    //--------------------
+    int one = 0;
+    int two;
+    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
+    if (rcb == -1)
+        printf("error one, errno: %d\n", errno);
+    rcb = getsockopt(rw_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&two, &l2);
+    if (rcb == 0)
+        printf("two: %d\n", two);
+    else if (rcb == -1)
+        printf("error two, errno: %d\n", errno);
+    //setsockopt getsockopt--------------------
 
     string str;
     cout << "=>";
