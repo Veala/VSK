@@ -6,6 +6,7 @@
 #include <unistd.h>
 //#include <sys/socket.h> //
 //#include <netinet/in.h> //
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <errno.h>
@@ -128,28 +129,29 @@ int main(int argc, char *argv[])
     socklen_t l1 = (socklen_t)sizeof(int);
     socklen_t l2 = (socklen_t)sizeof(int);
 
-    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_d, l1);
-    if (rcb == -1)
-        printf("error rcvbufsize write, errno: %d\n", errno);
-    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_, &l1);
-    if (rcb == -1)
-        printf("error rcvbufsize, errno: %d\n", errno);
-    else if (rcb == 0)
-        printf("rcvbufsize: %d\n", rcvbufsize_);
+//    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_d, l1);
+//    if (rcb == -1)
+//        printf("error rcvbufsize write, errno: %d\n", errno);
+//    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_SNDBUF, (void*)&rcvbufsize_, &l1);
+//    if (rcb == -1)
+//        printf("error rcvbufsize, errno: %d\n", errno);
+//    else if (rcb == 0)
+//        printf("rcvbufsize: %d\n", rcvbufsize_);
 
 
-    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_d, l1);
-    if (rcb == -1)
-        printf("error rcvbufsize write, errno: %d\n", errno);
-    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_, &l1);
-    if (rcb == -1)
-        printf("error rcvbufsize, errno: %d\n", errno);
-    else if (rcb == 0)
-        printf("rcvbufsize: %d\n", rcvbufsize_);
+//    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_d, l1);
+//    if (rcb == -1)
+//        printf("error rcvbufsize write, errno: %d\n", errno);
+//    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_RCVBUF, (void*)&rcvbufsize_, &l1);
+//    if (rcb == -1)
+//        printf("error rcvbufsize, errno: %d\n", errno);
+//    else if (rcb == 0)
+//        printf("rcvbufsize: %d\n", rcvbufsize_);
 
     //--------------------
-    int one = 0;
+    int one = 1;
     int two;
+    int three;
     rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
     if (rcb == -1)
         printf("error one, errno: %d\n", errno);
@@ -158,6 +160,15 @@ int main(int argc, char *argv[])
         printf("two: %d\n", two);
     else if (rcb == -1)
         printf("error two, errno: %d\n", errno);
+    //--------------------
+    rcb = setsockopt(tcp_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&one, l2);
+    if (rcb == -1)
+        printf("error one, errno: %d\n", errno);
+    rcb = getsockopt(tcp_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&three, &l2);
+    if (rcb == 0)
+        printf("three: %d\n", three);
+    else if (rcb == -1)
+        printf("error three, errno: %d\n", errno);
     //setsockopt getsockopt--------------------
 
 
