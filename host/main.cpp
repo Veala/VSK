@@ -6,7 +6,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <unistd.h>
-//#include <sys/socket.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -192,26 +192,92 @@ int main(int argc, char* argv[])
     else if (rcb == 0)
         printf("rcvbufsize: %d\n", rcvbufsize_);
     //--------------------
-    int one = 1;
+    int one = -1;
     int two;
     int three;
-    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
-    if (rcb == -1)
-        printf("error one, errno: %d\n", errno);
+    int four;
+//    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
+//    if (rcb == -1)
+//        printf("error one, errno: %d\n", errno);
     rcb = getsockopt(rw_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&two, &l2);
     if (rcb == 0)
         printf("two: %d\n", two);
     else if (rcb == -1)
         printf("error two, errno: %d\n", errno);
     //--------------------
-    rcb = setsockopt(rw_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&one, l2);
-    if (rcb == -1)
-        printf("error one, errno: %d\n", errno);
-    rcb = getsockopt(rw_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&three, &l2);
+//    rcb = setsockopt(rw_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&one, l2);
+//    if (rcb == -1)
+//        printf("error one, errno: %d\n", errno);
+//    rcb = getsockopt(rw_socket, IPPROTO_TCP, TCP_NODELAY, (void*)&three, &l2);
+//    if (rcb == 0)
+//        printf("three: %d\n", three);
+//    else if (rcb == -1)
+//        printf("error three, errno: %d\n", errno);
+//    //--------------------
+//    rcb = setsockopt(rw_socket, SOL_SOCKET, SO_PRIORITY, (void*)&four, l2);
+//    if (rcb == -1)
+//        printf("error four, errno: %d\n", errno);
+    rcb = getsockopt(rw_socket, SOL_SOCKET, SO_RCVLOWAT, (void*)&four, &l2);
     if (rcb == 0)
-        printf("three: %d\n", three);
+        printf("four: %d\n", four);
     else if (rcb == -1)
-        printf("error three, errno: %d\n", errno);
+        printf("error four, errno: %d\n", errno);
+
+//    //--------------------
+//    int claim = 100000;
+//    rcb = setsockopt(rw_socket, SOL_TCP, TCP_WINDOW_CLAMP, (void*)&claim, l2);
+//    if (rcb == -1)
+//        printf("error three, errno: %d\n", errno);
+//    rcb = getsockopt(rw_socket, SOL_TCP, TCP_WINDOW_CLAMP, (void*)&three, &l2);
+//    if (rcb == 0)
+//        printf("three: %d\n", three);
+//    else if (rcb == -1)
+//        printf("error three, errno: %d\n", errno);
+
+
+    //--------------------
+    tcp_info info;
+    socklen_t l3 = (socklen_t)sizeof(tcp_info);
+    rcb = getsockopt(rw_socket, SOL_TCP, TCP_INFO, (void*)&info, &l3);
+    if (rcb == 0) {
+        printf("tcpi_state: %d\n", info.tcpi_state);
+        printf("info.tcpi_ca_state: %d\n", info.tcpi_ca_state);
+        printf("info.tcpi_retransmits: %d\n", info.tcpi_retransmits);
+        printf("info.tcpi_probes: %d\n", info.tcpi_probes);
+        printf("info.tcpi_backoff: %d\n", info.tcpi_backoff);
+        printf("info.tcpi_options: %d\n", info.tcpi_options);
+        printf("info.tcpi_snd_wscale: %d\n", info.tcpi_snd_wscale);
+        printf("tcpi_rcv_wscale: %d\n", info.tcpi_rcv_wscale);
+        printf("info.tcpi_rto: %d\n", info.tcpi_rto);
+        printf("info.tcpi_ato: %d\n", info.tcpi_ato);
+        printf("info.tcpi_snd_mss: %d\n", info.tcpi_snd_mss);
+        printf("info.tcpi_rcv_mss: %d\n", info.tcpi_rcv_mss);
+        printf("info.tcpi_unacked: %d\n", info.tcpi_unacked);
+        printf("info.tcpi_sacked: %d\n", info.tcpi_sacked);
+        printf("info.tcpi_lost: %d\n", info.tcpi_lost);
+        printf("info.tcpi_retrans: %d\n", info.tcpi_retrans);
+        printf("info.tcpi_fackets: %d\n", info.tcpi_fackets);
+        printf("info.tcpi_last_data_sent: %d\n", info.tcpi_last_data_sent);
+        printf("info.tcpi_last_ack_sent: %d\n", info.tcpi_last_ack_sent);
+        printf("info.tcpi_last_data_recv: %d\n", info.tcpi_last_data_recv);
+        printf("info.tcpi_last_ack_recv: %d\n", info.tcpi_last_ack_recv);
+        printf("info.tcpi_pmtu: %d\n", info.tcpi_pmtu);
+        printf("info.tcpi_rcv_ssthresh: %d\n", info.tcpi_rcv_ssthresh);
+        printf("info.tcpi_rtt: %d\n", info.tcpi_rtt);
+        printf("info.tcpi_rttvar: %d\n", info.tcpi_rttvar);
+        printf("info.tcpi_snd_ssthresh: %d\n", info.tcpi_snd_ssthresh);
+        printf("info.tcpi_snd_cwnd: %d\n", info.tcpi_snd_cwnd);
+        printf("info.tcpi_advmss: %d\n", info.tcpi_advmss);
+        printf("info.tcpi_reordering: %d\n", info.tcpi_reordering);
+        printf("info.tcpi_rcv_rtt: %d\n", info.tcpi_rcv_rtt);
+        printf("info.tcpi_rcv_space: %d\n", info.tcpi_rcv_space);
+        printf("info.tcpi_total_retrans: %d\n", info.tcpi_total_retrans);
+    } else if (rcb == -1)
+        printf("error info, errno: %d\n", errno);
+
+    //irq
+    //TCP_WINDOW_CLAMP
+    //tcp_info
     //EISDIR
     //setsockopt getsockopt--------------------
 
@@ -265,7 +331,13 @@ int main(int argc, char* argv[])
 
             checkSend(write(rw_socket, &answer, sizeof(answer)));
             int n=0;
-            int err = readAllData(n, intfsize);
+
+            //--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            int recvCmdSize = sizeof(Ok); // or sizeof(answer) == CMDSIZE
+            int err = readAllData(n, recvCmdSize);
+            //--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            n=0;
+            err = readAllData(n, intfsize);
             checkError(err)
             if (n == intfsize)
                 printf("Data received\n");

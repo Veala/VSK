@@ -29,6 +29,7 @@ char buf[SIZE];
 char answer[CMDSIZE] = "answer";
 //const char* preSend = "send";
 char Ok[CMDSIZE] = "Ok";
+char preSend[CMDSIZE];
 
 int tcp_socket;
 fd_set rfds;
@@ -149,12 +150,13 @@ int main(int argc, char *argv[])
 //        printf("rcvbufsize: %d\n", rcvbufsize_);
 
     //--------------------
-    int one = 1;
+    int one = 0;
     int two;
     int three;
-    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
-    if (rcb == -1)
-        printf("error one, errno: %d\n", errno);
+    int four;
+//    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&one, l2);
+//    if (rcb == -1)
+//        printf("error one, errno: %d\n", errno);
     rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_DONTROUTE, (void*)&two, &l2);
     if (rcb == 0)
         printf("two: %d\n", two);
@@ -169,7 +171,59 @@ int main(int argc, char *argv[])
         printf("three: %d\n", three);
     else if (rcb == -1)
         printf("error three, errno: %d\n", errno);
+    //--------------------
+//    rcb = setsockopt(tcp_socket, SOL_SOCKET, SO_PRIORITY, (void*)&four, l2);
+//    if (rcb == -1)
+//        printf("error four, errno: %d\n", errno);
+    rcb = getsockopt(tcp_socket, SOL_SOCKET, SO_RCVLOWAT, (void*)&four, &l2);
+    if (rcb == 0)
+        printf("four: %d\n", four);
+    else if (rcb == -1)
+        printf("error four, errno: %d\n", errno);
+
+    //--------------------
+    tcp_info info;
+    socklen_t l3 = (socklen_t)sizeof(tcp_info);
+    rcb = getsockopt(tcp_socket, SOL_TCP, TCP_INFO, (void*)&info, &l3);
+    if (rcb == 0) {
+        printf("tcpi_state: %d\n", info.tcpi_state);
+        printf("info.tcpi_ca_state: %d\n", info.tcpi_ca_state);
+        printf("info.tcpi_retransmits: %d\n", info.tcpi_retransmits);
+        printf("info.tcpi_probes: %d\n", info.tcpi_probes);
+        printf("info.tcpi_backoff: %d\n", info.tcpi_backoff);
+        printf("info.tcpi_options: %d\n", info.tcpi_options);
+        printf("info.tcpi_snd_wscale: %d\n", info.tcpi_snd_wscale);
+        printf("tcpi_rcv_wscale: %d\n", info.tcpi_rcv_wscale);
+        printf("info.tcpi_rto: %d\n", info.tcpi_rto);
+        printf("info.tcpi_ato: %d\n", info.tcpi_ato);
+        printf("info.tcpi_snd_mss: %d\n", info.tcpi_snd_mss);
+        printf("info.tcpi_rcv_mss: %d\n", info.tcpi_rcv_mss);
+        printf("info.tcpi_unacked: %d\n", info.tcpi_unacked);
+        printf("info.tcpi_sacked: %d\n", info.tcpi_sacked);
+        printf("info.tcpi_lost: %d\n", info.tcpi_lost);
+        printf("info.tcpi_retrans: %d\n", info.tcpi_retrans);
+        printf("info.tcpi_fackets: %d\n", info.tcpi_fackets);
+        printf("info.tcpi_last_data_sent: %d\n", info.tcpi_last_data_sent);
+        printf("info.tcpi_last_ack_sent: %d\n", info.tcpi_last_ack_sent);
+        printf("info.tcpi_last_data_recv: %d\n", info.tcpi_last_data_recv);
+        printf("info.tcpi_last_ack_recv: %d\n", info.tcpi_last_ack_recv);
+        printf("info.tcpi_pmtu: %d\n", info.tcpi_pmtu);
+        printf("info.tcpi_rcv_ssthresh: %d\n", info.tcpi_rcv_ssthresh);
+        printf("info.tcpi_rtt: %d\n", info.tcpi_rtt);
+        printf("info.tcpi_rttvar: %d\n", info.tcpi_rttvar);
+        printf("info.tcpi_snd_ssthresh: %d\n", info.tcpi_snd_ssthresh);
+        printf("info.tcpi_snd_cwnd: %d\n", info.tcpi_snd_cwnd);
+        printf("info.tcpi_advmss: %d\n", info.tcpi_advmss);
+        printf("info.tcpi_reordering: %d\n", info.tcpi_reordering);
+        printf("info.tcpi_rcv_rtt: %d\n", info.tcpi_rcv_rtt);
+        printf("info.tcpi_rcv_space: %d\n", info.tcpi_rcv_space);
+        printf("info.tcpi_total_retrans: %d\n", info.tcpi_total_retrans);
+    } else if (rcb == -1)
+        printf("error info, errno: %d\n", errno);
+
     //setsockopt getsockopt--------------------
+
+
 
 
     while (1) {
@@ -178,6 +232,10 @@ int main(int argc, char *argv[])
         int err = readAllData(n, recvCmdSize, buf, NULL);
         checkError(err)
         if ((n == recvCmdSize) && (strcmp(buf, answer) == 0)) {
+            //--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            sprintf(preSend, "%ld", (size_t)size);
+            checkSend(write(tcp_socket, &preSend, sizeof(preSend)));
+            //--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             checkSend(write(tcp_socket, &message, size));
         } else if (n == recvCmdSize) {
             size=atoi(buf);
