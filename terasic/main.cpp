@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-#define debug
+//#define debug
 
 #define SIZE 2000000
 #define CMDSIZE 10

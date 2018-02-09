@@ -12,7 +12,7 @@
 #include <string.h>
 //#include <rpc/auth_des.h>
 
-#define debug
+//#define debug
 #define debug_time
 
 #define SIZE 2000000
